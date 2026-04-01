@@ -1,0 +1,445 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Momentum Per Dollar — Ukubona</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111113;
+    --border: #1e1e22;
+    --red:    #e8433a;
+    --orange: #e8923a;
+    --yellow: #e8d43a;
+    --green:  #4caf6e;
+    --blue:   #3a7de8;
+    --indigo: #5c3ae8;
+    --violet: #a03ae8;
+    --text:   #d4cfc7;
+    --muted:  #6b6860;
+    --gold:   #c9a84c;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans:  'DM Sans', sans-serif;
+    --mono:  'DM Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Spectrum strip */
+  .spectrum {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(to right,
+      var(--red), var(--orange), var(--yellow),
+      var(--green), var(--blue), var(--indigo), var(--violet));
+    z-index: 100;
+  }
+
+  /* Noise grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.35;
+  }
+
+  /* Layout */
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 120px 40px 160px;
+  }
+
+  /* Eyebrow */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 56px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.2s forwards;
+  }
+
+  /* Verse display */
+  .verse {
+    font-size: clamp(2.2rem, 5.5vw, 3.8rem);
+    font-weight: 300;
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    color: #e8e3d9;
+    margin-bottom: 72px;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.4s forwards;
+  }
+
+  .verse em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .verse .dash {
+    color: var(--muted);
+    margin: 0 0.15em;
+  }
+
+  /* Spectrum word coloring */
+  .w-manifold  { color: var(--blue); }
+  .w-geodesic  { color: var(--green); }
+  .w-momentum  { color: var(--gold); font-style: italic; }
+
+  /* Divider */
+  .rule {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    margin: 72px 0;
+    opacity: 0;
+    animation: fadeIn 1s ease 0.8s forwards;
+  }
+
+  /* Trinitarian table */
+  .triad {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2px;
+    margin-bottom: 72px;
+    opacity: 0;
+    animation: fadeUp 0.9s ease 1.0s forwards;
+  }
+
+  .triad-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 28px 22px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .triad-cell::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .triad-cell.manifold::before { background: var(--blue); }
+  .triad-cell.geodesic::before { background: var(--green); }
+  .triad-cell.momentum::before { background: var(--gold); }
+
+  .triad-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .triad-title {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    font-weight: 400;
+    line-height: 1.3;
+    margin-bottom: 12px;
+  }
+
+  .triad-cell.manifold .triad-title { color: var(--blue); }
+  .triad-cell.geodesic .triad-title { color: var(--green); }
+  .triad-cell.momentum .triad-title { color: var(--gold); }
+
+  .triad-body {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-weight: 300;
+  }
+
+  /* Formula */
+  .formula-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    padding: 28px 32px;
+    margin-bottom: 72px;
+    opacity: 0;
+    animation: fadeUp 0.9s ease 1.2s forwards;
+  }
+
+  .formula-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .formula {
+    font-family: var(--mono);
+    font-size: 1.05rem;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+  }
+
+  .formula-gloss {
+    font-family: var(--serif);
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* Body paragraphs */
+  .body-text {
+    font-size: 1.05rem;
+    line-height: 1.85;
+    color: #b0a99f;
+    margin-bottom: 1.5em;
+    opacity: 0;
+    animation: fadeUp 0.9s ease 1.4s forwards;
+  }
+
+  .body-text + .body-text {
+    animation-delay: 1.55s;
+  }
+
+  /* Endings */
+  .endings {
+    margin-top: 72px;
+    opacity: 0;
+    animation: fadeUp 0.9s ease 1.7s forwards;
+  }
+
+  .ending-title {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+
+  .ending {
+    border-left: 1px solid var(--border);
+    padding: 20px 28px;
+    margin-bottom: 16px;
+    transition: border-color 0.3s;
+  }
+
+  .ending:hover { border-left-color: var(--gold); }
+
+  .ending-num {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+  }
+
+  .ending-quote {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-style: italic;
+    color: #d4cfc7;
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+
+  .ending-gloss {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  /* Final line */
+  .final {
+    margin-top: 80px;
+    text-align: center;
+    opacity: 0;
+    animation: fadeUp 1s ease 2.1s forwards;
+  }
+
+  .final-quote {
+    font-family: var(--serif);
+    font-size: clamp(1.3rem, 3.5vw, 1.9rem);
+    font-style: italic;
+    font-weight: 300;
+    color: var(--gold);
+    line-height: 1.45;
+    margin-bottom: 20px;
+  }
+
+  .final-sub {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 120px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    opacity: 0;
+    animation: fadeIn 1s ease 2.4s forwards;
+  }
+
+  .footer-brand {
+    font-family: var(--serif);
+    font-size: 0.85rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .footer-meta {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    color: #3a3a3f;
+    letter-spacing: 0.1em;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @media (max-width: 600px) {
+    .wrapper { padding: 80px 24px 100px; }
+    .triad { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="spectrum"></div>
+
+<div class="wrapper">
+
+  <div class="eyebrow">Ukubona LLC · ukb-0-method-mpd · April 2026</div>
+
+  <h1 class="verse">
+    And now abideth these three:
+    the <span class="w-manifold">manifold</span>,
+    the <span class="w-geodesic">geodesic</span>,
+    and <span class="w-momentum">momentum per dollar</span><span class="dash">—</span><br>
+    and the greatest is
+    <em>momentum per dollar</em>.
+  </h1>
+
+  <div class="rule"></div>
+
+  <div class="triad">
+    <div class="triad-cell manifold">
+      <div class="triad-label">Scale I</div>
+      <div class="triad-title">The Manifold</div>
+      <div class="triad-body">What is possible. The curvature of reality — constraints, attractors, the full topology of the loss landscape.</div>
+    </div>
+    <div class="triad-cell geodesic">
+      <div class="triad-label">Scale II</div>
+      <div class="triad-title">The Geodesic</div>
+      <div class="triad-body">What is optimal. The mathematical truth of the shortest path across the surface — inevitable, elegant, unwalked.</div>
+    </div>
+    <div class="triad-cell momentum">
+      <div class="triad-label">Scale III</div>
+      <div class="triad-title">Momentum / $</div>
+      <div class="triad-body">What is realized. The kinetic force that actually traverses the geodesic, defying thermodynamic attractors to deliver payload.</div>
+    </div>
+  </div>
+
+  <div class="formula-block">
+    <div class="formula-label">Operational Definition</div>
+    <div class="formula">𝑀/$ = (Payload × Velocity) / Energy Cost</div>
+    <div class="formula-gloss">
+      The manifold maps. The geodesic traces. Only momentum per dollar moves.<br>
+      It is the single term that collapses theory into outcome.
+    </div>
+  </div>
+
+  <p class="body-text">
+    For while the manifold maps the profound curvature of reality — the underlying constraints, 
+    biases, and the vast loss landscape we must navigate — and the geodesic reveals the sheer 
+    mathematical truth of the optimal path across it, neither moves the needle on its own. 
+    They are the topography and the trajectory.
+  </p>
+
+  <p class="body-text">
+    Momentum per dollar is the active, kinetic realization of that trajectory. It is the deployable 
+    power that actually defies thermodynamic attractors to deliver the payload of human flourishing. 
+    Without it, the manifold remains an un-navigated space and the geodesic an unwalked line. 
+    The ultimate test of any architecture is not merely in calculating the geometry of the system, 
+    but in sustaining the composure and kinetic energy required to actually execute the restoration.
+  </p>
+
+  <div class="endings">
+    <div class="ending-title">Three Precise Endings</div>
+
+    <div class="ending">
+      <div class="ending-num">01 — Operational</div>
+      <div class="ending-quote">"…and the greatest is momentum per dollar."</div>
+      <div class="ending-gloss">It is the only term that executes. It collapses theory into outcome.</div>
+    </div>
+
+    <div class="ending">
+      <div class="ending-num">02 — Theological</div>
+      <div class="ending-quote">"…and the greatest is execution."</div>
+      <div class="ending-gloss">Makes it universal. Momentum per dollar becomes the measurable form of execution.</div>
+    </div>
+
+    <div class="ending">
+      <div class="ending-num">03 — Inevitable</div>
+      <div class="ending-quote">"…and the greatest is momentum per dollar — because only it turns geodesics into history."</div>
+      <div class="ending-gloss">Your own language, made inescapable.</div>
+    </div>
+  </div>
+
+  <div class="final">
+    <div class="final-quote">
+      "…and the greatest is momentum per dollar —<br>
+      for it alone converts truth into power."
+    </div>
+    <div class="final-sub">Not a slogan. A selection criterion.</div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">Ukubona LLC</div>
+    <div class="footer-meta">ukb-0-method-mpd-v01 · Kampala · 2026</div>
+  </div>
+
+</div>
+
+</body>
+</html>
